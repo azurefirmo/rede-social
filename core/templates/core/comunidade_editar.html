@@ -1,0 +1,41 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Editar Comunidade{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center text-primary">Editar Comunidade: {{ comunidade.nome }}</h2>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_nome" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="id_nome" name="nome" value="{{ comunidade.nome }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_descricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="id_descricao" name="descricao" rows="3" required>{{ comunidade.descricao }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_foto_capa" class="form-label">Foto de Capa</label>
+                            {% if comunidade.foto_capa %}
+                                <div class="mb-2">
+                                    <img src="{{ comunidade.foto_capa.url }}" class="img-fluid rounded" alt="Capa Atual">
+                                </div>
+                            {% endif %}
+                            <input type="file" class="form-control" id="id_foto_capa" name="foto_capa" accept="image/*">
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">Salvar Alterações</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'comunidade_detalhe' comunidade.id %}" class="btn btn-outline-secondary">Voltar para Comunidade</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

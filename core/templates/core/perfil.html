@@ -1,0 +1,117 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Perfil de {{ profile_user.usuario.username }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    {% if profile_user.foto_perfil %}
+                        <img src="{{ profile_user.foto_perfil.url }}" class="rounded-circle mb-3 img-thumbnail" style="width: 150px; height: 150px; object-fit: cover;" alt="Foto de Perfil">
+                    {% else %}
+                        <div class="bg-light rounded-circle mb-3 d-inline-block img-thumbnail" style="width: 150px; height: 150px; line-height: 150px;">
+                            <i class="bi bi-person-circle"></i> <!-- Se estiver usando Bootstrap Icons -->
+                        </div>
+                    {% endif %}
+                    <h5 class="card-title">{{ profile_user.usuario.username }}</h5>
+                    <p class="card-text">{{ profile_user.biografia|default:"Este usuário não escreveu uma biografia." }}</p>
+                    <p class="card-text"><small class="text-muted">Membro desde {{ profile_user.data_criacao|date:"M Y" }}</small></p>
+                    {% if is_own_profile %}
+                        <a href="{% url 'editar_perfil' %}" class="btn btn-primary">Editar Perfil</a>
+                    {% else %}
+                        {% if profile_user.usuario in user.perfil.usuario.relacionamentos_de.all %}
+                            <p class="text-info">Você segue este usuário.</p>
+                        {% else %}
+                            <a href="{% url 'relacionamento_enviar_solicitacao' profile_user.usuario.id %}" class="btn btn-outline-primary">Seguir</a>
+                        {% endif %}
+                        <a href="{% url 'enviar_mensagem' profile_user.usuario.id %}" class="btn btn-outline-success">Enviar Mensagem</a>
+                        {% if profile_user.usuario in user.perfil.usuario.relacionamentos_de.all %}
+                            <a href="{% url 'relacionamento_cancelar' profile_user.usuario.id %}" class="btn btn-outline-danger" onclick="return confirm('Tem certeza que deseja deixar de seguir {{ profile_user.usuario.username }}?')">Deixar de Seguir</a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Estatísticas</h6>
+                    <p class="card-text"><strong>Postagens:</strong> {{ user_posts.count }}</p>
+                    <p class="card-text"><strong>Amigos:</strong> {{ amigos_count }}</p>
+                    <p class="card-text"><strong>Seguindo:</strong> {{ seguindo_count }}</p>
+                    <p class="card-text"><strong>Seguidores:</strong> {{ seguidores_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <h3 class="mb-4">Postagens</h3>
+            {% for post in user_posts %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <p class="card-text">{{ post.conteudo_texto|linebreaks }}</p>
+                        {% if post.conteudo_midia %}
+                            {% if post.tipo == 'foto' %}
+                                <img src="{{ post.conteudo_midia.url }}" class="img-fluid rounded" alt="Conteúdo da postagem">
+                            {% elif post.tipo == 'video' %}
+                                <video controls class="img-fluid rounded">
+                                    <source src="{{ post.conteudo_midia.url }}" type="video/mp4">
+                                    Seu navegador não suporta o elemento video.
+                                </video>
+                            {% endif %}
+                        {% endif %}
+                        {% if post.url %}
+                            <a href="{{ post.url }}" target="_blank" class="card-link">{{ post.url }}</a>
+                        {% endif %}
+                        <p class="card-text"><small class="text-muted">{{ post.autor.username }} em {{ post.data_postagem|date:"d/m/Y H:i" }}</small></p>
+                        <div class="d-flex align-items-center mt-2">
+                            <button class="btn btn-sm btn-outline-secondary btn-curtir me-2" data-post-id="{{ post.id }}">
+                                {% if user in post.curtidas.all %}Descurtir{% else %}Curtir{% endif %}
+                            </button>
+                            <span class="text-muted small">{{ post.curtidas.count }} curtida{{ post.curtidas.count|pluralize }}</span>
+                        </div>
+                        {% if post.autor == user %}
+                            <a href="{% url 'apagar_postagem' post.id %}" class="btn btn-sm btn-outline-danger ms-2" onclick="return confirm('Tem certeza que deseja apagar esta postagem?')">Apagar</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p>{{ profile_user.usuario.username }} ainda não fez nenhuma postagem.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function setupLikeButtons() {
+        document.querySelectorAll('.btn-curtir').forEach(button => {
+            button.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(`/curtir/${postId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken,
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const likesCountElement = this.closest('.card-body').querySelector('.text-muted.small');
+                    likesCountElement.textContent = `${data.curtidas_count} curtida${data.curtidas_count !== 1 ? 's' : ''}`;
+                    this.textContent = data.curtido ? 'Descurtir' : 'Curtir';
+                })
+                .catch(error => {
+                    console.error('Erro ao curtir/descurtir:', error);
+                    alert('Erro ao processar a curtida. Por favor, tente novamente.');
+                });
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setupLikeButtons();
+    });
+</script>
+
+{% endblock %}

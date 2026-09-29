@@ -1,0 +1,5 @@
+{% for comentario in postagem.comentarios.all %}
+    <p><strong>{{ comentario.autor.username }}</strong>: {{ comentario.texto }}</p>
+{% empty %}
+    <p>Nenhum comentário ainda.</p>
+{% endfor %}

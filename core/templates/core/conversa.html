@@ -1,0 +1,35 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Conversa com {{ destinatario.username }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Conversa com {{ destinatario.username }}</h2>
+
+    <div id="mensagens-container" class="border rounded p-3 mb-3" style="max-height: 400px; overflow-y: auto;">
+        {% for mensagem in mensagens %}
+            <div class="d-flex mb-2 {% if mensagem.remetente == user %}justify-content-end{% else %}justify-content-start{% endif %}">
+                <div class="p-2 {% if mensagem.remetente == user %}bg-primary text-white rounded-start{% else %}bg-light border rounded-end{% endif %}" style="max-width: 75%;">
+                    <strong>{{ mensagem.remetente.username }}:</strong> {{ mensagem.texto }}
+                    <br>
+                    <small class="text-muted">{{ mensagem.data_envio|date:"d/m/Y H:i" }}</small>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted text-center">Ainda não há mensagens nesta conversa.</p>
+        {% endfor %}
+    </div>
+
+    <form method="post" action="{% url 'enviar_mensagem' destinatario.id %}" class="mt-3">
+        {% csrf_token %}
+        <div class="input-group">
+            <input type="text" class="form-control" name="texto" placeholder="Digite sua mensagem..." required>
+            <button class="btn btn-primary" type="submit">Enviar</button>
+        </div>
+    </form>
+
+    <div class="text-center mt-3">
+        <a href="{% url 'mensagens_lista' %}">Voltar para Conversas</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Explorar{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Explorar</h2>
+
+    <div class="row">
+        <div class="col-md-8">
+            <h3 class="mb-3">Postagens Públicas</h3>
+            {% for post in postagens_publicas %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <p class="card-text">{{ post.conteudo_texto|linebreaks }}</p>
+                        {% if post.conteudo_midia %}
+                            {% if post.tipo == 'foto' %}
+                                <img src="{{ post.conteudo_midia.url }}" class="img-fluid rounded" alt="Conteúdo da postagem">
+                            {% elif post.tipo == 'video' %}
+                                <video controls class="img-fluid rounded">
+                                    <source src="{{ post.conteudo_midia.url }}" type="video/mp4">
+                                    Seu navegador não suporta o elemento video.
+                                </video>
+                            {% endif %}
+                        {% endif %}
+                        {% if post.url %}
+                            <a href="{{ post.url }}" target="_blank" class="card-link">{{ post.url }}</a>
+                        {% endif %}
+                        <p class="card-text"><small class="text-muted">{{ post.autor.username }} em {{ post.data_postagem|date:"d/m/Y H:i" }}</small></p>
+                        <div class="d-flex align-items-center mt-2">
+                            <button class="btn btn-sm btn-outline-secondary btn-curtir me-2" data-post-id="{{ post.id }}">
+                                {% if user in post.curtidas.all %}Descurtir{% else %}Curtir{% endif %}
+                            </button>
+                            <span class="text-muted small">{{ post.curtidas.count }} curtida{{ post.curtidas.count|pluralize }}</span>
+                        </div>
+                        {% if post.autor == user %}
+                            <a href="{% url 'apagar_postagem' post.id %}" class="btn btn-sm btn-outline-danger ms-2" onclick="return confirm('Tem certeza que deseja apagar esta postagem?')">Apagar</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p>Nenhuma postagem pública encontrada.</p>
+            {% endfor %}
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Comunidades Populares</h5>
+                    <ul class="list-unstyled">
+                    {% for comunidade in comunidades_populares %}
+                        <li><a href="{% url 'comunidade_detalhe' comunidade.id %}">{{ comunidade.nome }}</a> ({{ comunidade.membros.count }} membros)</li>
+                    {% empty %}
+                        <li>Nenhuma comunidade popular.</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Usuários Ativos</h5>
+                    <ul class="list-unstyled">
+                    {% for usuario in usuarios_ativos %}
+                        <li><a href="{% url 'perfil' usuario.username %}">{{ usuario.username }}</a> ({{ usuario.postagens.count }} postagens)</li>
+                    {% empty %}
+                        <li>Nenhum usuário ativo encontrado.</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setupLikeButtons() {
+        document.querySelectorAll('.btn-curtir').forEach(button => {
+            button.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(`/curtir/${postId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken,
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const likesCountElement = this.closest('.card-body').querySelector('.text-muted.small');
+                    likesCountElement.textContent = `${data.curtidas_count} curtida${data.curtidas_count !== 1 ? 's' : ''}`;
+                    this.textContent = data.curtido ? 'Descurtir' : 'Curtir';
+                })
+                .catch(error => {
+                    console.error('Erro ao curtir/descurtir:', error);
+                    alert('Erro ao processar a curtida. Por favor, tente novamente.');
+                });
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setupLikeButtons();
+    });
+</script>
+
+{% endblock %}

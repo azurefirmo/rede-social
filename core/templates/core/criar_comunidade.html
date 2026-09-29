@@ -1,0 +1,36 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Criar Comunidade{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center text-primary">Criar Nova Comunidade</h2>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="id_nome" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="id_nome" name="nome" placeholder="Digite o nome da comunidade" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_descricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="id_descricao" name="descricao" rows="3" placeholder="Descreva a comunidade"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_foto_capa" class="form-label">Foto de Capa (Opcional)</label>
+                            <input type="file" class="form-control" id="id_foto_capa" name="foto_capa" accept="image/*">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Criar Comunidade</button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'comunidades_lista' %}" class="btn btn-outline-secondary">Voltar para Comunidades</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+<!-- core/templates/core/index.html -->
+{% extends "core/_base.html" %}
+
+{% block title %}Bem-vindo{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <h1>Bem-vindo à Minha Rede Social!</h1>
+            <p class="lead">Conecte-se com amigos, compartilhe ideias e explore comunidades.</p>
+            {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}" class="btn btn-primary me-2">Entrar</a>
+                <a href="{% url 'registro' %}" class="btn btn-primary me-2">Registrar</a>
+            {% else %}
+                <p>Você já está logado como {{ user.username }}. <a href="{% url 'home' %}">Ir para Timeline</a></p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

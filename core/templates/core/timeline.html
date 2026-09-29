@@ -1,0 +1,190 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Timeline{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h2 class="mb-4">Timeline</h2>
+
+    <!-- Formulário para Nova Postagem -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <form method="post" action="{% url 'criar_postagem' %}" enctype="multipart/form-data">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit" class="btn btn-primary">Publicar</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Lista de Postagens -->
+    {% for post in page_obj %}
+      <div class="card mb-3" id="post-card-{{ post.id }}">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+              <strong>{{ post.autor.username }}</strong> - {{ post.data_postagem|date:"d/m/Y H:i" }}
+              {% if post.comunidade %}
+                 em <a href="{% url 'comunidade_detalhe' post.comunidade.id %}">{{ post.comunidade.nome }}</a>
+              {% endif %}
+          </div>
+          {% if post.autor == user %}
+              <a href="{% url 'apagar_postagem' post.id %}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja apagar esta postagem?')">Apagar</a>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          {% if post.tipo == 'texto' %}
+            <p class="card-text">{{ post.conteudo_texto|linebreaks }}</p>
+          {% elif post.tipo == 'foto' %}
+            {% if post.conteudo_midia %}
+                <img src="{{ post.conteudo_midia.url }}" class="img-fluid rounded" alt="Imagem da postagem">
+            {% endif %}
+          {% elif post.tipo == 'video' %}
+            {% if post.conteudo_midia %}
+                <video controls class="img-fluid rounded">
+                    <source src="{{ post.conteudo_midia.url }}" type="video/mp4">
+                    Seu navegador não suporta o elemento video.
+                </video>
+            {% endif %}
+          {% elif post.tipo == 'url' %}
+            <a href="{{ post.url }}" target="_blank" class="card-link">{{ post.url }}</a>
+          {% endif %}
+
+          <!-- Curtidas -->
+          <div class="d-flex align-items-center mt-2">
+              <button class="btn btn-sm btn-outline-secondary btn-curtir me-2" data-post-id="{{ post.id }}">
+                  {% if user in post.curtidas.all %}Descurtir{% else %}Curtir{% endif %}
+              </button>
+              <span id="likes-count-{{ post.id }}" class="text-muted small">{{ post.curtidas.count }} curtida{{ post.curtidas.count|pluralize }}</span>
+          </div>
+
+          <!-- Comentários -->
+          <div class="mt-3" id="comments-section-{{ post.id }}">
+              {% include 'core/partials/comentarios.html' with postagem=post %}
+          </div>
+
+          <!-- Formulário para Novo Comentário -->
+          <form method="post" action="{% url 'adicionar_comentario' post.id %}" class="mt-2 form-comentar" data-post-id="{{ post.id }}">
+              {% csrf_token %}
+              <div class="input-group">
+                  {{ comentarios_form.texto }}
+                  <button type="submit" class="btn btn-sm btn-outline-primary">Comentar</button>
+              </div>
+          </form>
+
+        </div>
+      </div>
+    {% empty %}
+      <p>Nenhuma postagem na timeline ainda.</p>
+    {% endfor %}
+
+    <!-- Paginação -->
+    {% if page_obj.has_other_pages %}
+        <nav aria-label="Paginação da timeline">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Sidebar</h5>
+        <p>Aqui você pode colocar informações secundárias, como lista de amigos, sugestões de comunidades, etc.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    function setupLikeButtons() {
+        document.querySelectorAll('.btn-curtir').forEach(button => {
+            button.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(`/curtir/${postId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrftoken,
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const likesCountElement = document.getElementById(`likes-count-${postId}`);
+                    likesCountElement.textContent = `${data.curtidas_count} curtida${data.curtidas_count !== 1 ? 's' : ''}`;
+                    this.textContent = data.curtido ? 'Descurtir' : 'Curtir';
+                })
+                .catch(error => {
+                    console.error('Erro ao curtir/descurtir:', error);
+                    alert('Erro ao processar a curtida. Por favor, tente novamente.');
+                });
+            });
+        });
+    }
+
+    function setupCommentForms() {
+        document.querySelectorAll('.form-comentar').forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const postId = this.dataset.postId;
+                const formData = new FormData(this);
+                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                fetch(this.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.text();
+                    } else {
+                        throw new Error('Erro na resposta do servidor ao adicionar comentário');
+                    }
+                })
+                .then(html => {
+                    document.getElementById(`comments-section-${postId}`).innerHTML = html;
+                    this.reset();
+                })
+                .catch(error => {
+                    console.error('Erro ao adicionar comentário:', error);
+                    alert('Erro ao adicionar o comentário. Por favor, tente novamente.');
+                });
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        setupLikeButtons();
+        setupCommentForms();
+    });
+
+    const observer = new MutationObserver(function(mutationsList) {
+        for (let mutation of mutationsList) {
+            if (mutation.type === 'childList') {
+                setupLikeButtons();
+                setupCommentForms();
+            }
+        }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+</script>
+
+{% endblock %}

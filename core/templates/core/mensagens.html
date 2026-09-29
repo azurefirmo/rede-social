@@ -1,0 +1,22 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Mensagens{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Conversas</h2>
+    {% if conversas_usuarios %}
+        <div class="list-group">
+        {% for usuario in conversas_usuarios %}
+            <a href="{% url 'mensagens_conversa' usuario.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                {{ usuario.username }}
+                <!-- Exemplo: Ícone de status de leitura ou última mensagem -->
+                <!-- <span class="badge bg-primary rounded-pill">14</span> -->
+            </a>
+        {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">Você ainda não tem nenhuma conversa.</p>
+    {% endif %}
+</div>
+{% endblock %}

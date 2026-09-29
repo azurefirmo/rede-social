@@ -1,0 +1,39 @@
+{% extends "core/_base.html" %}
+
+{% block title %}Notificações{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <h2 class="mb-4">Notificações</h2>
+
+            {% if solicitacoes_pendentes %}
+                <h3 class="mb-3">Solicitações de Amizade</h3>
+                <ul class="list-group">
+                {% for solicitacao in solicitacoes_pendentes %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ solicitacao.usuario_de.username }}</strong> enviou uma solicitação de amizade.
+                        </div>
+                        <div>
+                            <a href="{% url 'relacionamento_aceitar_recusar' solicitacao.id 'aceitar' %}" class="btn btn-success btn-sm">Aceitar</a>
+                            <a href="{% url 'relacionamento_aceitar_recusar' solicitacao.id 'recusar' %}" class="btn btn-danger btn-sm" onclick="return confirm('Tem certeza que deseja recusar a solicitação de {{ solicitacao.usuario_de.username }}?')">Recusar</a>
+                        </div>
+                    </li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">Você não tem notificações no momento.</p>
+            {% endif %}
+
+            <!-- Exemplo: Futuras notificações de outros tipos -->
+            <!-- <h3>Outras Notificações</h3>
+            <ul class="list-group">
+                <li class="list-group-item">...</li>
+            </ul> -->
+
+        </div>
+    </div>
+</div>
+{% endblock %}
